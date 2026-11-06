@@ -46,15 +46,29 @@ def register_chart_callbacks(app):
         if n_clicks is None or n_clicks == 0:
             return [no_update] * len(chart_outputs)
 
+        # FIX: Check if the json strings look like json and not filenames
+        def safe_read_json(json_str):
+            if not json_str: return pd.DataFrame()
+            try:
+                import io
+                from dash.exceptions import PreventUpdate
+                # Check if it's a string representation of JSON
+                if isinstance(json_str, str) and json_str.startswith('{'):
+                    return pd.read_json(io.StringIO(json_str), orient='split')
+                return pd.DataFrame()
+            except Exception as e:
+                print(f"Error parsing JSON: {e}")
+                return pd.DataFrame()
+
         # Use filtered data if available, else full data
         if filtered_json:
-            dff = pd.read_json(filtered_json, orient='split')
+            dff = safe_read_json(filtered_json)
         elif full_json:
-            dff = pd.read_json(full_json, orient='split')
+            dff = safe_read_json(full_json)
         else:
             return [no_update] * len(chart_outputs)
 
-        if len(dff) == 0:
+        if dff.empty:
             empty_fig = lambda msg: go.Figure().add_annotation(
                 text=msg, x=0.5, y=0.5, showarrow=False, font_size=16
             )

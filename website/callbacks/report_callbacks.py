@@ -23,10 +23,20 @@ def register_report_callbacks(app):
         if n_clicks is None or n_clicks == 0:
             return no_update, no_update, no_update, no_update
 
+        def safe_read_json(json_str):
+            if not json_str: return pd.DataFrame()
+            try:
+                import io
+                if isinstance(json_str, str) and json_str.startswith('{'):
+                    return pd.read_json(io.StringIO(json_str), orient='split')
+                return pd.DataFrame()
+            except Exception:
+                return pd.DataFrame()
+
         if filtered_json:
-            dff = pd.read_json(filtered_json, orient='split')
+            dff = safe_read_json(filtered_json)
         elif full_json:
-            dff = pd.read_json(full_json, orient='split')
+            dff = safe_read_json(full_json)
         else:
             return no_update, no_update, no_update, no_update
 

@@ -67,6 +67,11 @@ def register_filter_callbacks(app, df: pd.DataFrame):
             html.Span(" | ".join(filter_parts) if filter_parts else "None (showing all data)")
         ], className="text-muted small")
 
+        # FIX: Ensure dff is not empty or if it is, return a valid empty JSON representation
+        # Using a simple empty DataFrame with columns instead of dff
+        if dff.empty:
+            dff = pd.DataFrame(columns=dff.columns)
+
         return dff.to_json(date_format='iso', orient='split'), active_display
 
     @app.callback(
