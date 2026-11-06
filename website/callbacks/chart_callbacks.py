@@ -2,6 +2,7 @@
 
 from dash import Input, Output, State, callback, no_update
 import pandas as pd
+import plotly.graph_objects as go
 
 from website.components.charts import get_chart
 

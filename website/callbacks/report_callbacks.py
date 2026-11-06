@@ -1,6 +1,6 @@
 # Report & Story Callbacks for NYC Housing & Transportation Dashboard
 
-from dash import Input, Output, State, callback, no_update
+from dash import Input, Output, State, callback, no_update, html
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -61,7 +61,7 @@ def register_report_callbacks(app):
             concern = latest[(latest['total_affordable_units'] > latest['total_affordable_units'].median()) &
                            (latest['total_vehicle_volume'] < latest['total_vehicle_volume'].median())]
             if len(concern) > 0:
-                findings.append(html.Li(f"{len(concern)} ZIP codes have high affordable housing but low traffic volume — potential transit access gaps"))
+                findings.append(html.Li(f"{len(concern)} boroughs have high affordable housing but low traffic volume — potential transit access gaps"))
 
         if not findings:
             findings = [html.Li("Apply filters and click Generate Report to see findings")]
