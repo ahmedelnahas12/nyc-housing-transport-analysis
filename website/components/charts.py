@@ -12,6 +12,9 @@ def create_housing_time_series(df: pd.DataFrame, boroughs=None) -> go.Figure:
     if boroughs:
         df = df[df['borough'].isin(boroughs)]
 
+    if len(df) == 0:
+        return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
+
     agg = df.groupby(['year', 'borough'])['total_affordable_units'].sum().reset_index()
 
     fig = px.bar(agg, x='year', y='total_affordable_units', color='borough',
@@ -24,9 +27,15 @@ def create_housing_time_series(df: pd.DataFrame, boroughs=None) -> go.Figure:
 
 def create_housing_heatmap(df: pd.DataFrame, top_n=20) -> go.Figure:
     """RQ1: Heatmap - Affordable Units by Borough × Year"""
+    if len(df) == 0:
+        return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
+
     pivot = df.pivot_table(
         index='borough', columns='year', values='total_affordable_units', fill_value=0, aggfunc='sum'
     )
+
+    if pivot.empty:
+        return go.Figure().add_annotation(text="No data available for heatmap", x=0.5, y=0.5, showarrow=False)
 
     fig = px.imshow(pivot, aspect='auto',
                     title='Affordable Units by Borough & Year',
@@ -37,6 +46,9 @@ def create_housing_heatmap(df: pd.DataFrame, top_n=20) -> go.Figure:
 
 def create_traffic_time_series(df: pd.DataFrame, locations=None) -> go.Figure:
     """RQ3: Traffic Volume by Borough & Year (Line)"""
+    if len(df) == 0:
+        return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
+
     agg = df.groupby(['year', 'borough'])['total_vehicle_volume'].sum().reset_index()
 
     fig = px.line(agg, x='year', y='total_vehicle_volume', color='borough', markers=True,
@@ -49,11 +61,14 @@ def create_traffic_time_series(df: pd.DataFrame, locations=None) -> go.Figure:
 
 def create_traffic_change_bar(df: pd.DataFrame) -> go.Figure:
     """RQ4: % Change in Traffic Volume by Borough"""
+    if len(df) == 0:
+        return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
+
     pivot = df.pivot_table(index='borough', columns='year', values='total_vehicle_volume', fill_value=0, aggfunc='sum')
 
-    years = sorted([c for c in pivot.columns if isinstance(c, (int, float))])
+    years = sorted([c for c in pivot.columns if isinstance(c, (int, float, np.integer))])
     if len(years) < 2:
-        return go.Figure().add_annotation(text="Need at least 2 years of data", x=0.5, y=0.5, showarrow=False)
+        return go.Figure().add_annotation(text="Need at least 2 years of data for trend", x=0.5, y=0.5, showarrow=False)
 
     first_y, last_y = years[0], years[-1]
     pivot['pct_change'] = ((pivot[last_y] - pivot[first_y]) / pivot[first_y].replace(0, np.nan)) * 100
@@ -68,9 +83,12 @@ def create_traffic_change_bar(df: pd.DataFrame) -> go.Figure:
 
 def create_cross_domain_scatter(df: pd.DataFrame) -> go.Figure:
     """RQ5: % Change Housing vs % Change Traffic by Borough (Cross-domain)"""
+    if len(df) == 0:
+        return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
+
     years = sorted(df['year'].unique())
     if len(years) < 2:
-        return go.Figure().add_annotation(text="Need at least 2 years of data", x=0.5, y=0.5, showarrow=False)
+        return go.Figure().add_annotation(text="Need at least 2 years of data for trend", x=0.5, y=0.5, showarrow=False)
 
     first_y, last_y = years[0], years[-1]
 
@@ -90,7 +108,7 @@ def create_cross_domain_scatter(df: pd.DataFrame) -> go.Figure:
     fig = px.scatter(changes, x='housing_pct', y='traffic_pct', hover_data=['borough'],
                      title=f'% Change Affordable Housing vs Traffic Volume ({first_y}→{last_y}) by Borough',
                      labels={'housing_pct': '% Change Affordable Units', 'traffic_pct': '% Change Traffic Volume'},
-                     trendline='ols')
+                     trendline='ols' if len(changes) > 1 else None)
     fig.add_hline(y=0, line_dash='dash', line_color='gray')
     fig.add_vline(x=0, line_dash='dash', line_color='gray')
     return fig
@@ -98,18 +116,24 @@ def create_cross_domain_scatter(df: pd.DataFrame) -> go.Figure:
 
 def create_housing_traffic_scatter(df: pd.DataFrame) -> go.Figure:
     """Cross-domain: Housing Units vs Traffic Volume (Current Year)"""
+    if len(df) == 0:
+        return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
+
     # Scatter using Borough x Year aggregated data
     fig = px.scatter(df, x='total_vehicle_volume', y='total_affordable_units',
                      color='borough',
                      hover_data=['year'],
                      title='Affordable Housing Units vs Traffic Volume (Borough × Year)',
                      labels={'total_vehicle_volume': 'Annual Vehicle Volume', 'total_affordable_units': 'Affordable Units'},
-                     trendline='ols')
+                     trendline='ols' if len(df) > 1 else None)
     return fig
 
 
 def create_traffic_boxplot(df: pd.DataFrame) -> go.Figure:
     """RQ7: Traffic Volume Distribution by Borough"""
+    if len(df) == 0:
+        return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
+
     fig = px.box(df, x='borough', y='total_vehicle_volume', color='borough',
                  title='Traffic Volume Distribution by Borough',
                  labels={'borough': 'Borough', 'total_vehicle_volume': 'Annual Vehicle Volume'})
@@ -118,6 +142,9 @@ def create_traffic_boxplot(df: pd.DataFrame) -> go.Figure:
 
 def create_quadrant_chart(df: pd.DataFrame, year=None) -> go.Figure:
     """RQ8: Quadrant Chart - Housing vs Traffic by Borough"""
+    if len(df) == 0:
+        return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
+
     if year is None:
         year = df['year'].max()
 
@@ -160,6 +187,9 @@ def create_quadrant_chart(df: pd.DataFrame, year=None) -> go.Figure:
 
 def create_time_series_facet(df: pd.DataFrame) -> go.Figure:
     """Faceted time series: Housing & Traffic by Borough"""
+    if len(df) == 0:
+        return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
+
     ts = df.groupby(['year', 'borough']).agg({
         'total_affordable_units': 'sum',
         'total_vehicle_volume': 'sum'
