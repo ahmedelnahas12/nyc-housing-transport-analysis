@@ -40,3 +40,4 @@ website/.next/
 
 # Logs
 *.log
+.vercel
