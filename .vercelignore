@@ -1,6 +1,5 @@
 # Files/folders to ignore during Vercel deployment
 notebooks/
-data/
 docs/
 .git/
 .gitignore
