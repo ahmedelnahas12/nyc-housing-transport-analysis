@@ -34,7 +34,8 @@ def register_filter_callbacks(app, df: pd.DataFrame):
         if full_data_json is None:
             return no_update, no_update
 
-        dff = pd.read_json(full_data_json, orient='split')
+        import io
+        dff = pd.read_json(io.StringIO(full_data_json), orient='split')
 
         # Apply dropdown filters
         if boroughs:
@@ -87,7 +88,8 @@ def register_filter_callbacks(app, df: pd.DataFrame):
         if not search_query or not search_clicks or full_data_json is None:
             return no_update, no_update
 
-        search_filters = parse_search_query(search_query, pd.read_json(full_data_json, orient='split'))
+        import io
+        search_filters = parse_search_query(search_query, pd.read_json(io.StringIO(full_data_json), orient='split'))
 
         borough_val = search_filters.get('borough', no_update)
         year_val = search_filters.get('year', no_update)
