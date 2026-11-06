@@ -1,0 +1,154 @@
+/* Custom Styles for NYC Housing & Transportation Dashboard */
+
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --success-color: #27ae60;
+    --warning-color: #f39c12;
+    --danger-color: #e74c3c;
+    --light-bg: #f8f9fa;
+    --border-color: #dee2e6;
+}
+
+body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    background-color: var(--light-bg);
+}
+
+/* Card styling for charts */
+.card {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: box-shadow 0.2s;
+}
+
+.card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background-color: white;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+}
+
+/* Dropdown styling */
+.Select-control {
+    border-radius: 6px !important;
+}
+
+.Select--multi .Select-value {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+/* Button styling */
+.btn-success {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.btn-success:hover {
+    background-color: #219653;
+    border-color: #219653;
+}
+
+.btn-primary {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+/* Loading spinner */
+.dash-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+/* Graph containers */
+.js-plotly-plot {
+    border-radius: 4px;
+}
+
+/* Active filters display */
+#active-filters-display {
+    padding: 8px 12px;
+    background-color: #e8f4fd;
+    border-radius: 6px;
+    border-left: 3px solid var(--secondary-color);
+}
+
+/* Story section */
+#story-findings li,
+#story-limitations li,
+#story-impact li {
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+
+#story-findings li::marker {
+    color: var(--success-color);
+}
+
+#story-limitations li::marker {
+    color: var(--warning-color);
+}
+
+#story-impact li::marker {
+    color: var(--secondary-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+
+    h1 {
+        font-size: 1.75rem !important;
+    }
+
+    h3 {
+        font-size: 1.25rem !important;
+    }
+
+    h4 {
+        font-size: 1.1rem !important;
+    }
+
+    .btn-lg {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    .btn, .dropdown, .form-control, #filters-container {
+        display: none !important;
+    }
+
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+    }
+}
+
+/* Focus states for accessibility */
+.btn:focus,
+.form-control:focus,
+.Select-control:focus {
+    outline: 2px solid var(--secondary-color);
+    outline-offset: 2px;
+}
+
+/* Tooltip styling */
+.plotly-tooltip {
+    font-size: 12px !important;
+    border-radius: 6px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
