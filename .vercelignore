@@ -1,0 +1,26 @@
+# Files/folders to ignore during Vercel deployment
+notebooks/
+data/
+docs/
+.git/
+.gitignore
+README.md
+run_pipeline.py
+*.parquet
+*.pkl
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+venv/
+env/
+.env
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+*.log
+.vercel

@@ -5,6 +5,7 @@ from dash import dcc, html
 import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.graph_objects as go
+import os
 
 from website.components.filters import create_filters
 from website.components.charts import CHART_REGISTRY
@@ -23,25 +24,33 @@ app = dash.Dash(
     update_title=None,
 )
 
-server = app.server  # For gunicorn/vercel deployment
+# WSGI application for Vercel
+server = app.server
+application = server  # Explicit WSGI export for Vercel
 
 
 # --- Load Data ---
 def load_data():
     """Load integrated dataset for the dashboard."""
-    try:
-        df = pd.read_csv("../notebooks/integrated_data.csv", low_memory=False)
-        # Ensure proper types
-        df['year'] = df['year'].astype(int)
-        df['zip_code'] = df['zip_code'].astype(str).str.zfill(5)
-        print(f"Loaded data: {df.shape}")
-        return df
-    except FileNotFoundError:
-        print("Warning: integrated_data.csv not found. Using empty DataFrame.")
-        return pd.DataFrame()
-    except Exception as e:
-        print(f"Error loading data: {e}")
-        return pd.DataFrame()
+    # Try multiple paths (local dev vs Vercel deployment)
+    paths = [
+        "data/integrated_data.csv",           # Vercel: website/data/
+        "../notebooks/integrated_data.csv",   # Local dev
+        "notebooks/integrated_data.csv",      # Alternative
+    ]
+    for path in paths:
+        if os.path.exists(path):
+            try:
+                df = pd.read_csv(path, low_memory=False)
+                df['year'] = df['year'].astype(int)
+                if 'zip_code' in df.columns:
+                    df['zip_code'] = df['zip_code'].astype(str).str.zfill(5)
+                print(f"Loaded data from {path}: {df.shape}")
+                return df
+            except Exception as e:
+                print(f"Error loading {path}: {e}")
+    print("Warning: integrated_data.csv not found in any location. Using empty DataFrame.")
+    return pd.DataFrame()
 
 
 # Load data at startup
