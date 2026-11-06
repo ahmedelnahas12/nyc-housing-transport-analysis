@@ -11,7 +11,7 @@ def create_filters(df: pd.DataFrame) -> html.Div:
     # Extract unique values for dropdowns safely
     years = sorted(df['year'].dropna().unique()) if 'year' in df.columns else []
     boroughs = sorted(df['borough'].dropna().unique()) if 'borough' in df.columns else []
-    zip_codes = sorted(df['zip_code'].dropna().unique()) if 'zip_code' in df.columns else []
+    # Note: Data is aggregated at Borough x Year level, so no ZIP codes available
 
     return html.Div([
         # Header
@@ -35,7 +35,7 @@ def create_filters(df: pd.DataFrame) -> html.Div:
                     placeholder="Select borough(s)...",
                     className="mb-3"
                 ),
-            ], md=4),
+            ], md=6),
 
             dbc.Col([
                 html.Label("Year", className="fw-bold"),
@@ -47,19 +47,7 @@ def create_filters(df: pd.DataFrame) -> html.Div:
                     placeholder="Select year(s)...",
                     className="mb-3"
                 ),
-            ], md=4),
-
-            dbc.Col([
-                html.Label("ZIP Code", className="fw-bold"),
-                dcc.Dropdown(
-                    id='filter-zip',
-                    options=[{'label': z, 'value': z} for z in zip_codes],
-                    value=[],
-                    multi=True,
-                    placeholder="Select ZIP code(s)...",
-                    className="mb-3"
-                ),
-            ], md=4),
+            ], md=6),
         ]),
 
         # Filter Row 2: Housing & Traffic categories
@@ -152,11 +140,6 @@ def parse_search_query(query: str, df: pd.DataFrame) -> dict:
     year_match = re.search(r'\b(20\d{2})\b', query)
     if year_match:
         filters['year'] = [int(year_match.group(1))]
-
-    # Extract ZIP code
-    zip_match = re.search(r'\b(\d{5})\b', query)
-    if zip_match:
-        filters['zip_code'] = [zip_match.group(1)]
 
     # Extract keywords
     if 'affordable' in query_lower or 'housing' in query_lower:

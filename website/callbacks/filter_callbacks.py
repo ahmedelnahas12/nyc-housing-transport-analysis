@@ -1,6 +1,6 @@
 # Filter & Search Callbacks for NYC Housing & Transportation Dashboard
 
-from dash import Input, Output, State, callback, no_update
+from dash import Input, Output, State, callback, no_update, html
 import pandas as pd
 import json
 
@@ -24,13 +24,12 @@ def register_filter_callbacks(app, df: pd.DataFrame):
         Output('active-filters-display', 'children'),
         Input('filter-borough', 'value'),
         Input('filter-year', 'value'),
-        Input('filter-zip', 'value'),
         Input('search-btn', 'n_clicks'),
         State('search-input', 'value'),
         State('full-data-store', 'data'),
         prevent_initial_call=True
     )
-    def apply_filters(boroughs, years, zip_codes, search_clicks, search_query, full_data_json):
+    def apply_filters(boroughs, years, search_clicks, search_query, full_data_json):
         """Apply dropdown filters and search to data."""
         if full_data_json is None:
             return no_update, no_update
@@ -42,8 +41,6 @@ def register_filter_callbacks(app, df: pd.DataFrame):
             dff = dff[dff['borough'].isin(boroughs)]
         if years:
             dff = dff[dff['year'].isin(years)]
-        if zip_codes:
-            dff = dff[dff['zip_code'].isin(zip_codes)]
 
         # Apply search query (overrides dropdowns if provided)
         search_filters = {}
@@ -53,8 +50,6 @@ def register_filter_callbacks(app, df: pd.DataFrame):
                 dff = dff[dff['borough'].isin(search_filters['borough'])]
             if search_filters.get('year'):
                 dff = dff[dff['year'].isin(search_filters['year'])]
-            if search_filters.get('zip_code'):
-                dff = dff[dff['zip_code'].isin(search_filters['zip_code'])]
 
         # Build active filters display
         filter_parts = []
@@ -64,9 +59,6 @@ def register_filter_callbacks(app, df: pd.DataFrame):
         if years or search_filters.get('year'):
             y = years or search_filters.get('year', [])
             filter_parts.append(f"Year: {', '.join(str(v) for v in y)}")
-        if zip_codes or search_filters.get('zip_code'):
-            z = zip_codes or search_filters.get('zip_code', [])
-            filter_parts.append(f"ZIP: {', '.join(z)}")
         if search_query and search_clicks:
             filter_parts.append(f"Search: \"{search_query}\"")
 
@@ -80,7 +72,6 @@ def register_filter_callbacks(app, df: pd.DataFrame):
     @app.callback(
         Output('filter-borough', 'value'),
         Output('filter-year', 'value'),
-        Output('filter-zip', 'value'),
         Input('search-btn', 'n_clicks'),
         State('search-input', 'value'),
         State('full-data-store', 'data'),
@@ -89,12 +80,11 @@ def register_filter_callbacks(app, df: pd.DataFrame):
     def sync_dropdowns_from_search(search_clicks, search_query, full_data_json):
         """Sync dropdown values from search query."""
         if not search_query or not search_clicks or full_data_json is None:
-            return no_update, no_update, no_update
+            return no_update, no_update
 
         search_filters = parse_search_query(search_query, pd.read_json(full_data_json, orient='split'))
 
         borough_val = search_filters.get('borough', no_update)
         year_val = search_filters.get('year', no_update)
-        zip_val = search_filters.get('zip_code', no_update)
 
-        return borough_val, year_val, zip_val
+        return borough_val, year_val
