@@ -8,10 +8,10 @@ import pandas as pd
 def create_filters(df: pd.DataFrame) -> html.Div:
     """Create all filter dropdowns and search input."""
 
-    # Extract unique values for dropdowns
-    years = sorted(df['year'].dropna().unique())
-    boroughs = sorted(df['borough'].dropna().unique())
-    zip_codes = sorted(df['zip_code'].dropna().unique())
+    # Extract unique values for dropdowns safely
+    years = sorted(df['year'].dropna().unique()) if 'year' in df.columns else []
+    boroughs = sorted(df['borough'].dropna().unique()) if 'borough' in df.columns else []
+    zip_codes = sorted(df['zip_code'].dropna().unique()) if 'zip_code' in df.columns else []
 
     return html.Div([
         # Header
