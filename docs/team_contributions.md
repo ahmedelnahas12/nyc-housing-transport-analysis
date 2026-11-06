@@ -265,8 +265,8 @@
 | **Website - Filters & Search** | ✅ | 5 dropdowns + natural language search |
 | **Website - Generate Report** | ✅ | Updates all 9 charts + story section |
 | **Website - Story Section** | ✅ | Dynamic findings, static limitations/impact |
-| **Website - Deployed** | ⏳ | Pending Vercel deployment |
-| **GitHub Repository** | ⏳ | Pending push |
+| **Website - Deployed** | ✅ | Deployed to Vercel |
+| **GitHub Repository** | ✅ | `https://github.com/ahmedelnahas12/nyc-housing-transport-analysis` |
 | **README.md** | ✅ | Complete with setup & contributions |
 
 ---
@@ -274,7 +274,7 @@
 ## Submission Package
 
 - **GitHub Repository:** `https://github.com/ahmedelnahas12/nyc-housing-transport-analysis`
-- **Deployment Link:** [To be added after Vercel deployment]
+- **Deployment Link:** https://nyc-housing-transport-analysis.vercel.app
 - **Dataset Links:**
   - Housing: `https://data.cityofnewyork.us/resource/hg8x-zxpr.csv`
   - Transportation: `https://data.cityofnewyork.us/api/views/6fi9-q3ta/rows.csv?accessType=download`
