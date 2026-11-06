@@ -34,7 +34,10 @@ def load_data():
     """Load integrated dataset for the dashboard."""
     # Try multiple paths (local dev vs Vercel deployment)
     paths = [
+        "integrated_data.csv",                # Vercel: project root
+        "./integrated_data.csv",              # Vercel: project root (explicit)
         "data/integrated_data.csv",           # Vercel: website/data/
+        "../integrated_data.csv",             # Local dev from website/
         "../notebooks/integrated_data.csv",   # Local dev
         "notebooks/integrated_data.csv",      # Alternative
     ]
