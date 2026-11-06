@@ -1,8 +1,8 @@
 # NYC Housing & Transportation Data Engineering Project
 
 **Course:** Data Engineering and Visualization, Winter Semester 2026  
-**Institution:** German International University (GIU)  
-**Milestone:** 1 — Due November 9, 2026  
+  
+
 
 ---
 
