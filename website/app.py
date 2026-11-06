@@ -33,13 +33,14 @@ application = server  # Explicit WSGI export for Vercel
 def load_data():
     """Load integrated dataset for the dashboard."""
     # Try multiple paths (local dev vs Vercel deployment)
+    # Get the directory of this script to build absolute paths
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(base_dir)
+
     paths = [
-        "integrated_data.csv",                # Vercel: project root
-        "./integrated_data.csv",              # Vercel: project root (explicit)
-        "data/integrated_data.csv",           # Vercel: website/data/
-        "../integrated_data.csv",             # Local dev from website/
-        "../notebooks/integrated_data.csv",   # Local dev
-        "notebooks/integrated_data.csv",      # Alternative
+        os.path.join(project_root, "integrated_data.csv"),           # Vercel: project root
+        os.path.join(base_dir, "data", "integrated_data.csv"),       # Vercel: website/data/
+        os.path.join(project_root, "notebooks", "integrated_data.csv"),  # Local dev
     ]
     for path in paths:
         if os.path.exists(path):
