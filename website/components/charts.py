@@ -7,64 +7,97 @@ import pandas as pd
 import numpy as np
 
 
-def create_housing_time_series(df: pd.DataFrame, boroughs=None) -> go.Figure:
-    """RQ1: Affordable Housing Units by Borough & Year (Stacked Bar)"""
-    if boroughs:
-        df = df[df['borough'].isin(boroughs)]
+def _get_geo_col(df: pd.DataFrame) -> str:
+    """Get the geographic column name (borough or zip_code)."""
+    if 'borough' in df.columns:
+        return 'borough'
+    elif 'zip_code' in df.columns:
+        return 'zip_code'
+    return None
+
+
+def create_housing_time_series(df: pd.DataFrame, geo_values=None) -> go.Figure:
+    """RQ1: Affordable Housing Units by Geography & Year (Stacked Bar)"""
+    geo_col = _get_geo_col(df)
+    if geo_col is None:
+        return go.Figure().add_annotation(text="No geographic column found", x=0.5, y=0.5, showarrow=False)
+
+    if geo_values:
+        df = df[df[geo_col].isin(geo_values)]
 
     if len(df) == 0:
         return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
 
-    agg = df.groupby(['year', 'borough'])['total_affordable_units'].sum().reset_index()
+    agg = df.groupby(['year', geo_col])['total_affordable_units'].sum().reset_index()
 
-    fig = px.bar(agg, x='year', y='total_affordable_units', color='borough',
-                 title='Affordable Housing Units Completed by Borough & Year',
-                 labels={'year': 'Year', 'total_affordable_units': 'Units', 'borough': 'Borough'},
+    fig = px.bar(agg, x='year', y='total_affordable_units', color=geo_col,
+                 title=f'Affordable Housing Units Completed by {geo_col.replace("_", " ").title()} & Year',
+                 labels={'year': 'Year', 'total_affordable_units': 'Units', geo_col: geo_col.replace("_", " ").title()},
                  color_discrete_sequence=px.colors.qualitative.Set2)
     fig.update_layout(barmode='stack', xaxis={'type': 'category'}, hovermode='x unified')
     return fig
 
 
 def create_housing_heatmap(df: pd.DataFrame, top_n=20) -> go.Figure:
-    """RQ1: Heatmap - Affordable Units by Borough × Year"""
+    """RQ1: Heatmap - Affordable Units by Geography × Year"""
+    geo_col = _get_geo_col(df)
+    if geo_col is None:
+        return go.Figure().add_annotation(text="No geographic column found", x=0.5, y=0.5, showarrow=False)
+
     if len(df) == 0:
         return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
 
     pivot = df.pivot_table(
-        index='borough', columns='year', values='total_affordable_units', fill_value=0, aggfunc='sum'
+        index=geo_col, columns='year', values='total_affordable_units', fill_value=0, aggfunc='sum'
     )
 
     if pivot.empty:
         return go.Figure().add_annotation(text="No data available for heatmap", x=0.5, y=0.5, showarrow=False)
 
     fig = px.imshow(pivot, aspect='auto',
-                    title='Affordable Units by Borough & Year',
-                    labels={'x': 'Year', 'y': 'Borough', 'color': 'Units'},
+                    title=f'Affordable Units by {geo_col.replace("_", " ").title()} & Year',
+                    labels={'x': 'Year', 'y': geo_col.replace("_", " ").title(), 'color': 'Units'},
                     color_continuous_scale='Blues', text_auto=True)
     return fig
 
 
-def create_traffic_time_series(df: pd.DataFrame, locations=None) -> go.Figure:
-    """RQ3: Traffic Volume by Borough & Year (Line)"""
+def create_traffic_time_series(df: pd.DataFrame, geo_values=None) -> go.Figure:
+    """RQ3: Traffic Volume by Geography & Year (Line)"""
+    geo_col = _get_geo_col(df)
+    if geo_col is None:
+        return go.Figure().add_annotation(text="No geographic column found", x=0.5, y=0.5, showarrow=False)
+
+    if geo_values:
+        df = df[df[geo_col].isin(geo_values)]
+
     if len(df) == 0:
         return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
 
-    agg = df.groupby(['year', 'borough'])['total_vehicle_volume'].sum().reset_index()
+    # Use avg_traffic_volume column
+    traffic_col = 'avg_traffic_volume' if 'avg_traffic_volume' in df.columns else 'total_vehicle_volume'
 
-    fig = px.line(agg, x='year', y='total_vehicle_volume', color='borough', markers=True,
-                  title='Annual Traffic Volume by Borough',
-                  labels={'year': 'Year', 'total_vehicle_volume': 'Vehicle Volume', 'borough': 'Borough'})
+    agg = df.groupby(['year', geo_col])[traffic_col].sum().reset_index()
+
+    fig = px.line(agg, x='year', y=traffic_col, color=geo_col, markers=True,
+                  title=f'Annual Traffic Volume by {geo_col.replace("_", " ").title()}',
+                  labels={'year': 'Year', traffic_col: 'Vehicle Volume', geo_col: geo_col.replace("_", " ").title()})
     fig.update_xaxes(type='category')
     fig.update_layout(hovermode='x unified')
     return fig
 
 
 def create_traffic_change_bar(df: pd.DataFrame) -> go.Figure:
-    """RQ4: % Change in Traffic Volume by Borough"""
+    """RQ4: % Change in Traffic Volume by Geography"""
+    geo_col = _get_geo_col(df)
+    if geo_col is None:
+        return go.Figure().add_annotation(text="No geographic column found", x=0.5, y=0.5, showarrow=False)
+
     if len(df) == 0:
         return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
 
-    pivot = df.pivot_table(index='borough', columns='year', values='total_vehicle_volume', fill_value=0, aggfunc='sum')
+    traffic_col = 'avg_traffic_volume' if 'avg_traffic_volume' in df.columns else 'total_vehicle_volume'
+
+    pivot = df.pivot_table(index=geo_col, columns='year', values=traffic_col, fill_value=0, aggfunc='sum')
 
     years = sorted([c for c in pivot.columns if isinstance(c, (int, float, np.integer))])
     if len(years) < 2:
@@ -74,15 +107,19 @@ def create_traffic_change_bar(df: pd.DataFrame) -> go.Figure:
     pivot['pct_change'] = ((pivot[last_y] - pivot[first_y]) / pivot[first_y].replace(0, np.nan)) * 100
     change_df = pivot[['pct_change']].reset_index().sort_values('pct_change')
 
-    fig = px.bar(change_df, x='pct_change', y='borough', orientation='h',
+    fig = px.bar(change_df, x='pct_change', y=geo_col, orientation='h',
                  title=f'Traffic Volume % Change ({first_y} → {last_y})',
-                 labels={'pct_change': '% Change', 'borough': 'Borough'},
+                 labels={'pct_change': '% Change', geo_col: geo_col.replace("_", " ").title()},
                  color='pct_change', color_continuous_scale='RdBu_r', color_continuous_midpoint=0)
     return fig
 
 
 def create_cross_domain_scatter(df: pd.DataFrame) -> go.Figure:
-    """RQ5: % Change Housing vs % Change Traffic by Borough (Cross-domain)"""
+    """RQ5: % Change Housing vs % Change Traffic by Geography (Cross-domain)"""
+    geo_col = _get_geo_col(df)
+    if geo_col is None:
+        return go.Figure().add_annotation(text="No geographic column found", x=0.5, y=0.5, showarrow=False)
+
     if len(df) == 0:
         return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
 
@@ -92,21 +129,23 @@ def create_cross_domain_scatter(df: pd.DataFrame) -> go.Figure:
 
     first_y, last_y = years[0], years[-1]
 
-    pivot = df.pivot_table(index='borough', columns='year',
-                           values=['total_affordable_units', 'total_vehicle_volume'], fill_value=0, aggfunc='sum')
+    traffic_col = 'avg_traffic_volume' if 'avg_traffic_volume' in df.columns else 'total_vehicle_volume'
+
+    pivot = df.pivot_table(index=geo_col, columns='year',
+                           values=['total_affordable_units', traffic_col], fill_value=0, aggfunc='sum')
     pivot.columns = [f'{col[0]}_{col[1]}' for col in pivot.columns]
 
     h_first, h_last = f'total_affordable_units_{first_y}', f'total_affordable_units_{last_y}'
-    t_first, t_last = f'total_vehicle_volume_{first_y}', f'total_vehicle_volume_{last_y}'
+    t_first, t_last = f'{traffic_col}_{first_y}', f'{traffic_col}_{last_y}'
 
     changes = pd.DataFrame({
-        'borough': pivot.index,
+        geo_col: pivot.index,
         'housing_pct': ((pivot[h_last] - pivot[h_first]) / pivot[h_first].replace(0, np.nan)) * 100,
         'traffic_pct': ((pivot[t_last] - pivot[t_first]) / pivot[t_first].replace(0, np.nan)) * 100,
     }).dropna()
 
-    fig = px.scatter(changes, x='housing_pct', y='traffic_pct', hover_data=['borough'],
-                     title=f'% Change Affordable Housing vs Traffic Volume ({first_y}→{last_y}) by Borough',
+    fig = px.scatter(changes, x='housing_pct', y='traffic_pct', hover_data=[geo_col],
+                     title=f'% Change Affordable Housing vs Traffic Volume ({first_y}→{last_y}) by {geo_col.replace("_", " ").title()}',
                      labels={'housing_pct': '% Change Affordable Units', 'traffic_pct': '% Change Traffic Volume'},
                      trendline='ols' if len(changes) > 1 else None)
     fig.add_hline(y=0, line_dash='dash', line_color='gray')
@@ -116,32 +155,48 @@ def create_cross_domain_scatter(df: pd.DataFrame) -> go.Figure:
 
 def create_housing_traffic_scatter(df: pd.DataFrame) -> go.Figure:
     """Cross-domain: Housing Units vs Traffic Volume (Current Year)"""
+    geo_col = _get_geo_col(df)
+    if geo_col is None:
+        return go.Figure().add_annotation(text="No geographic column found", x=0.5, y=0.5, showarrow=False)
+
     if len(df) == 0:
         return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
 
-    # Scatter using Borough x Year aggregated data
-    fig = px.scatter(df, x='total_vehicle_volume', y='total_affordable_units',
-                     color='borough',
+    traffic_col = 'avg_traffic_volume' if 'avg_traffic_volume' in df.columns else 'total_vehicle_volume'
+
+    # Scatter using Geography x Year aggregated data
+    fig = px.scatter(df, x=traffic_col, y='total_affordable_units',
+                     color=geo_col,
                      hover_data=['year'],
-                     title='Affordable Housing Units vs Traffic Volume (Borough × Year)',
-                     labels={'total_vehicle_volume': 'Annual Vehicle Volume', 'total_affordable_units': 'Affordable Units'},
+                     title=f'Affordable Housing Units vs Traffic Volume ({geo_col.replace("_", " ").title()} × Year)',
+                     labels={traffic_col: 'Annual Vehicle Volume', 'total_affordable_units': 'Affordable Units'},
                      trendline='ols' if len(df) > 1 else None)
     return fig
 
 
 def create_traffic_boxplot(df: pd.DataFrame) -> go.Figure:
-    """RQ7: Traffic Volume Distribution by Borough"""
+    """RQ7: Traffic Volume Distribution by Geography"""
+    geo_col = _get_geo_col(df)
+    if geo_col is None:
+        return go.Figure().add_annotation(text="No geographic column found", x=0.5, y=0.5, showarrow=False)
+
     if len(df) == 0:
         return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
 
-    fig = px.box(df, x='borough', y='total_vehicle_volume', color='borough',
-                 title='Traffic Volume Distribution by Borough',
-                 labels={'borough': 'Borough', 'total_vehicle_volume': 'Annual Vehicle Volume'})
+    traffic_col = 'avg_traffic_volume' if 'avg_traffic_volume' in df.columns else 'total_vehicle_volume'
+
+    fig = px.box(df, x=geo_col, y=traffic_col, color=geo_col,
+                 title=f'Traffic Volume Distribution by {geo_col.replace("_", " ").title()}',
+                 labels={geo_col: geo_col.replace("_", " ").title(), traffic_col: 'Annual Vehicle Volume'})
     return fig
 
 
 def create_quadrant_chart(df: pd.DataFrame, year=None) -> go.Figure:
-    """RQ8: Quadrant Chart - Housing vs Traffic by Borough"""
+    """RQ8: Quadrant Chart - Housing vs Traffic by Geography"""
+    geo_col = _get_geo_col(df)
+    if geo_col is None:
+        return go.Figure().add_annotation(text="No geographic column found", x=0.5, y=0.5, showarrow=False)
+
     if len(df) == 0:
         return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
 
@@ -153,15 +208,17 @@ def create_quadrant_chart(df: pd.DataFrame, year=None) -> go.Figure:
     if len(latest) == 0:
         return go.Figure().add_annotation(text=f"No data for year {year}", x=0.5, y=0.5, showarrow=False)
 
+    traffic_col = 'avg_traffic_volume' if 'avg_traffic_volume' in df.columns else 'total_vehicle_volume'
+
     h_median = latest['total_affordable_units'].median()
-    t_median = latest['total_vehicle_volume'].median()
+    t_median = latest[traffic_col].median()
 
     def quadrant(row):
-        if row['total_affordable_units'] >= h_median and row['total_vehicle_volume'] >= t_median:
+        if row['total_affordable_units'] >= h_median and row[traffic_col] >= t_median:
             return 'High Housing / High Traffic'
-        elif row['total_affordable_units'] >= h_median and row['total_vehicle_volume'] < t_median:
+        elif row['total_affordable_units'] >= h_median and row[traffic_col] < t_median:
             return 'High Housing / Low Traffic ⚠️'
-        elif row['total_affordable_units'] < h_median and row['total_vehicle_volume'] >= t_median:
+        elif row['total_affordable_units'] < h_median and row[traffic_col] >= t_median:
             return 'Low Housing / High Traffic'
         else:
             return 'Low Housing / Low Traffic'
@@ -175,10 +232,10 @@ def create_quadrant_chart(df: pd.DataFrame, year=None) -> go.Figure:
         'Low Housing / Low Traffic': 'gray'
     }
 
-    fig = px.scatter(latest, x='total_vehicle_volume', y='total_affordable_units',
-                     color='quadrant', hover_data=['borough'],
-                     title=f'Affordable Housing vs Traffic Volume by Borough ({year}) — Quadrant Analysis',
-                     labels={'total_vehicle_volume': 'Traffic Volume', 'total_affordable_units': 'Affordable Units'},
+    fig = px.scatter(latest, x=traffic_col, y='total_affordable_units',
+                     color='quadrant', hover_data=[geo_col],
+                     title=f'Affordable Housing vs Traffic Volume by {geo_col.replace("_", " ").title()} ({year}) — Quadrant Analysis',
+                     labels={traffic_col: 'Traffic Volume', 'total_affordable_units': 'Affordable Units'},
                      color_discrete_map=color_map)
     fig.add_hline(y=h_median, line_dash='dash', line_color='gray')
     fig.add_vline(x=t_median, line_dash='dash', line_color='gray')
@@ -186,18 +243,24 @@ def create_quadrant_chart(df: pd.DataFrame, year=None) -> go.Figure:
 
 
 def create_time_series_facet(df: pd.DataFrame) -> go.Figure:
-    """Faceted time series: Housing & Traffic by Borough"""
+    """Faceted time series: Housing & Traffic by Geography"""
+    geo_col = _get_geo_col(df)
+    if geo_col is None:
+        return go.Figure().add_annotation(text="No geographic column found", x=0.5, y=0.5, showarrow=False)
+
     if len(df) == 0:
         return go.Figure().add_annotation(text="No data for selected filters", x=0.5, y=0.5, showarrow=False)
 
-    ts = df.groupby(['year', 'borough']).agg({
+    traffic_col = 'avg_traffic_volume' if 'avg_traffic_volume' in df.columns else 'total_vehicle_volume'
+
+    ts = df.groupby(['year', geo_col]).agg({
         'total_affordable_units': 'sum',
-        'total_vehicle_volume': 'sum'
+        traffic_col: 'sum'
     }).reset_index()
 
-    fig = px.line(ts, x='year', y=['total_affordable_units', 'total_vehicle_volume'],
-                  color='borough', facet_col='borough', facet_col_wrap=2,
-                  title='Housing & Traffic Trends by Borough',
+    fig = px.line(ts, x='year', y=['total_affordable_units', traffic_col],
+                  color=geo_col, facet_col=geo_col, facet_col_wrap=2,
+                  title=f'Housing & Traffic Trends by {geo_col.replace("_", " ").title()}',
                   labels={'value': 'Count', 'year': 'Year', 'variable': 'Metric'})
     fig.update_xaxes(type='category')
     return fig

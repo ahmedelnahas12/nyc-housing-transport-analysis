@@ -5,6 +5,15 @@ import pandas as pd
 import plotly.graph_objects as go
 
 
+def _get_geo_col(df: pd.DataFrame) -> str:
+    """Get the geographic column name (borough or zip_code)."""
+    if 'borough' in df.columns:
+        return 'borough'
+    elif 'zip_code' in df.columns:
+        return 'zip_code'
+    return None
+
+
 def register_report_callbacks(app):
     """Register callbacks for story section and report generation."""
 
@@ -46,21 +55,24 @@ def register_report_callbacks(app):
         # Key Findings (dynamic based on data)
         findings = []
         if len(dff) > 0:
+            geo_col = _get_geo_col(dff)
+            traffic_col = 'avg_traffic_volume' if 'avg_traffic_volume' in dff.columns else 'total_vehicle_volume'
+
             # Finding 1: Correlation
-            both = dff[(dff['total_affordable_units'] > 0) & (dff['total_vehicle_volume'] > 0)]
+            both = dff[(dff['total_affordable_units'] > 0) & (dff[traffic_col] > 0)]
             if len(both) > 2:
-                corr = both['total_affordable_units'].corr(both['total_vehicle_volume'])
+                corr = both['total_affordable_units'].corr(both[traffic_col])
                 findings.append(html.Li(f"Correlation between affordable units and traffic volume: {corr:.3f} ({'positive' if corr > 0 else 'negative'})"))
 
-            # Finding 2: Top borough
-            borough_housing = dff.groupby('borough')['total_affordable_units'].sum()
-            if not borough_housing.empty:
-                top_borough = borough_housing.idxmax()
-                findings.append(html.Li(f"Borough with most affordable housing: {top_borough} ({borough_housing.max():,.0f} units)"))
+            # Finding 2: Top geography
+            geo_housing = dff.groupby(geo_col)['total_affordable_units'].sum()
+            if not geo_housing.empty:
+                top_geo = geo_housing.idxmax()
+                findings.append(html.Li(f"Area with most affordable housing: {top_geo} ({geo_housing.max():,.0f} units)"))
 
             # Finding 3: Traffic trend
             if 'year' in dff.columns:
-                yearly_traffic = dff.groupby('year')['total_vehicle_volume'].sum()
+                yearly_traffic = dff.groupby('year')[traffic_col].sum()
                 if len(yearly_traffic) >= 2:
                     trend = "increasing" if yearly_traffic.iloc[-1] > yearly_traffic.iloc[0] else "decreasing"
                     findings.append(html.Li(f"Traffic volume trend: {trend} over {yearly_traffic.index.min()}–{yearly_traffic.index.max()}"))
@@ -69,9 +81,9 @@ def register_report_callbacks(app):
             latest_year = dff['year'].max()
             latest = dff[dff['year'] == latest_year]
             concern = latest[(latest['total_affordable_units'] > latest['total_affordable_units'].median()) &
-                           (latest['total_vehicle_volume'] < latest['total_vehicle_volume'].median())]
+                           (latest[traffic_col] < latest[traffic_col].median())]
             if len(concern) > 0:
-                findings.append(html.Li(f"{len(concern)} boroughs have high affordable housing but low traffic volume — potential transit access gaps"))
+                findings.append(html.Li(f"{len(concern)} areas have high affordable housing but low traffic volume — potential transit access gaps"))
 
         if not findings:
             findings = [html.Li("Apply filters and click Generate Report to see findings")]

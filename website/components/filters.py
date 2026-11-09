@@ -10,8 +10,13 @@ def create_filters(df: pd.DataFrame) -> html.Div:
 
     # Extract unique values for dropdowns safely
     years = sorted(df['year'].dropna().unique()) if 'year' in df.columns else []
+    zip_codes = sorted(df['zip_code'].dropna().unique()) if 'zip_code' in df.columns else []
     boroughs = sorted(df['borough'].dropna().unique()) if 'borough' in df.columns else []
-    # Note: Data is aggregated at Borough x Year level, so no ZIP codes available
+
+    # Use zip_codes if no borough column, else boroughs
+    geo_options = boroughs if boroughs else zip_codes
+    geo_label = "Borough" if boroughs else "ZIP Code"
+    geo_id = 'filter-borough' if boroughs else 'filter-zip'
 
     return html.Div([
         # Header
@@ -23,16 +28,16 @@ def create_filters(df: pd.DataFrame) -> html.Div:
             ])
         ]),
 
-        # Filter Row 1: Borough, Year
+        # Filter Row 1: Borough/ZIP, Year
         dbc.Row([
             dbc.Col([
-                html.Label("Borough", className="fw-bold"),
+                html.Label(geo_label, className="fw-bold"),
                 dcc.Dropdown(
-                    id='filter-borough',
-                    options=[{'label': b, 'value': b} for b in boroughs],
+                    id=geo_id,
+                    options=[{'label': str(b), 'value': b} for b in geo_options],
                     value=[],
                     multi=True,
-                    placeholder="Select borough(s)...",
+                    placeholder=f"Select {geo_label.lower()}(s)...",
                     className="mb-3"
                 ),
             ], md=6),
@@ -58,9 +63,8 @@ def create_filters(df: pd.DataFrame) -> html.Div:
                     id='filter-housing-metric',
                     options=[
                         {'label': 'Total Affordable Units', 'value': 'total_affordable_units'},
+                        {'label': 'Total Housing Projects', 'value': 'total_housing_projects'},
                         {'label': 'Total Units', 'value': 'total_units'},
-                        {'label': 'Project Count', 'value': 'project_count'},
-                        {'label': 'Building Count', 'value': 'building_count'},
                     ],
                     value='total_affordable_units',
                     clearable=False,
@@ -73,12 +77,11 @@ def create_filters(df: pd.DataFrame) -> html.Div:
                 dcc.Dropdown(
                     id='filter-traffic-metric',
                     options=[
-                        {'label': 'Total Vehicle Volume', 'value': 'total_vehicle_volume'},
-                        {'label': 'Towards Manhattan', 'value': 'towards_manhattan'},
-                        {'label': 'Towards Brooklyn', 'value': 'towards_brooklyn'},
-                        {'label': 'Total Pedestrians', 'value': 'total_pedestrians'},
+                        {'label': 'Avg Traffic Volume', 'value': 'avg_traffic_volume'},
+                        {'label': 'Max Traffic Volume', 'value': 'max_traffic_volume'},
+                        {'label': 'Total Traffic Records', 'value': 'total_traffic_records'},
                     ],
-                    value='total_vehicle_volume',
+                    value='avg_traffic_volume',
                     clearable=False,
                     className="mb-3"
                 ),
@@ -93,7 +96,7 @@ def create_filters(df: pd.DataFrame) -> html.Div:
                     dbc.Input(
                         id='search-input',
                         type='text',
-                        placeholder='e.g., "Brooklyn 2022 affordable housing" or "ZIP 11211 traffic"',
+                        placeholder='e.g., "10001 2022 affordable housing" or "Manhattan 2020 traffic"',
                         className="mb-3"
                     ),
                     dbc.Button("Search", id="search-btn", color="primary", className="mb-3"),
@@ -128,15 +131,21 @@ def parse_search_query(query: str, df: pd.DataFrame) -> dict:
     query_lower = query.lower()
     filters = {}
 
+    # Extract ZIP code
+    import re
+    zip_match = re.search(r'\b(\d{5})\b', query)
+    if zip_match and 'zip_code' in df.columns:
+        filters['zip_code'] = [zip_match.group(1)]
+
     # Extract borough
-    boroughs = df['borough'].dropna().unique()
-    for b in boroughs:
-        if b.lower() in query_lower:
-            filters['borough'] = [b]
-            break
+    if 'borough' in df.columns:
+        boroughs = df['borough'].dropna().unique()
+        for b in boroughs:
+            if b.lower() in query_lower:
+                filters['borough'] = [b]
+                break
 
     # Extract year
-    import re
     year_match = re.search(r'\b(20\d{2})\b', query)
     if year_match:
         filters['year'] = [int(year_match.group(1))]
