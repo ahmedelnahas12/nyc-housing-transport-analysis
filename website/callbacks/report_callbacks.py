@@ -2,7 +2,8 @@
 
 from dash import Input, Output, State, callback, no_update, html
 import pandas as pd
-import plotly.graph_objects as go
+
+from website.components.filters import dataframe_from_store, normalize_frame
 
 
 def register_report_callbacks(app):
@@ -23,21 +24,16 @@ def register_report_callbacks(app):
         if n_clicks is None or n_clicks == 0:
             return no_update, no_update, no_update, no_update
 
-        def safe_read_json(json_str):
-            if not json_str: return pd.DataFrame()
+        def read_store(payload):
             try:
-                import io
-                if isinstance(json_str, str) and json_str.startswith('{'):
-                    return pd.read_json(io.StringIO(json_str), orient='split')
-                return pd.DataFrame()
+                return normalize_frame(dataframe_from_store(payload))
             except Exception:
                 return pd.DataFrame()
 
-        if filtered_json:
-            dff = safe_read_json(filtered_json)
-        elif full_json:
-            dff = safe_read_json(full_json)
-        else:
+        filtered = read_store(filtered_json)
+        full = read_store(full_json)
+        dff = filtered if filtered_json else full
+        if full_json is None and filtered_json is None:
             return no_update, no_update, no_update, no_update
 
         # Research Question

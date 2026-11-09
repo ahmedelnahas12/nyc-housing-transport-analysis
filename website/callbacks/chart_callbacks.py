@@ -5,6 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from website.components.charts import get_chart
+from website.components.filters import dataframe_from_store, normalize_frame
 
 
 def register_chart_callbacks(app):
@@ -46,33 +47,24 @@ def register_chart_callbacks(app):
         if n_clicks is None or n_clicks == 0:
             return [no_update] * len(chart_outputs)
 
-        # FIX: Check if the json strings look like json and not filenames
-        def safe_read_json(json_str):
-            if not json_str: return pd.DataFrame()
+        def read_store(payload):
             try:
-                import io
-                from dash.exceptions import PreventUpdate
-                # Check if it's a string representation of JSON
-                if isinstance(json_str, str) and json_str.startswith('{'):
-                    return pd.read_json(io.StringIO(json_str), orient='split')
-                return pd.DataFrame()
+                return normalize_frame(dataframe_from_store(payload))
             except Exception as e:
-                print(f"Error parsing JSON: {e}")
+                print(f"Error parsing stored data: {e}")
                 return pd.DataFrame()
 
-        # Use filtered data if available, else full data
-        if filtered_json:
-            dff = safe_read_json(filtered_json)
-        elif full_json:
-            dff = safe_read_json(full_json)
-        else:
-            return [no_update] * len(chart_outputs)
+        filtered = read_store(filtered_json)
+        full = read_store(full_json)
+        # An empty filtered store means "no filter has been applied yet", not "nothing matched".
+        dff = filtered if filtered_json else full
 
         if dff.empty:
             empty_fig = lambda msg: go.Figure().add_annotation(
                 text=msg, x=0.5, y=0.5, showarrow=False, font_size=16
             )
-            return [empty_fig("No data matches current filters")] * len(chart_outputs)
+            message = "No data matches current filters" if len(full) else "No integrated data is loaded"
+            return [empty_fig(message)] * len(chart_outputs)
 
         figures = []
         for chart_name in chart_names:

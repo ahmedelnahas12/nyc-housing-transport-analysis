@@ -120,6 +120,50 @@ def create_filters(df: pd.DataFrame) -> html.Div:
     ])
 
 
+def dataframe_from_store(payload) -> pd.DataFrame:
+    """Read a dcc.Store payload saved with DataFrame.to_json(orient='split')."""
+    import io
+
+    if payload is None or payload == "":
+        return pd.DataFrame()
+    if isinstance(payload, pd.DataFrame):
+        return payload.copy()
+    if isinstance(payload, dict) and "columns" in payload and "data" in payload:
+        return pd.DataFrame(payload["data"], columns=payload["columns"])
+    if isinstance(payload, str):
+        text = payload.strip()
+        if not text or text[0] not in "{[":
+            return pd.DataFrame()
+        return pd.read_json(io.StringIO(text), orient="split")
+    return pd.DataFrame()
+
+
+def normalize_frame(df: pd.DataFrame) -> pd.DataFrame:
+    """Make borough text and year numbers comparable to the dropdown values."""
+    if df.empty:
+        return df
+    out = df.copy()
+    if "borough" in out.columns:
+        out["borough"] = out["borough"].astype("string").str.strip()
+    if "year" in out.columns:
+        out["year"] = pd.to_numeric(out["year"], errors="coerce")
+    return out
+
+
+def selected_years(years) -> list:
+    """Dropdown years may arrive as ints or numeric strings."""
+    if years is None or years == "":
+        return []
+    if isinstance(years, (str, int, float)):
+        years = [years]
+    parsed = []
+    for year in years:
+        number = pd.to_numeric(year, errors="coerce")
+        if pd.notna(number):
+            parsed.append(int(number))
+    return parsed
+
+
 def parse_search_query(query: str, df: pd.DataFrame) -> dict:
     """Parse natural language search query into filter dict."""
     if not query:

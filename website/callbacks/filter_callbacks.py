@@ -4,7 +4,12 @@ from dash import Input, Output, State, callback, no_update, html
 import pandas as pd
 import json
 
-from website.components.filters import parse_search_query
+from website.components.filters import (
+    dataframe_from_store,
+    normalize_frame,
+    parse_search_query,
+    selected_years,
+)
 
 
 def register_filter_callbacks(app, df: pd.DataFrame):
@@ -34,8 +39,12 @@ def register_filter_callbacks(app, df: pd.DataFrame):
         if full_data_json is None:
             return no_update, no_update
 
-        import io
-        dff = pd.read_json(io.StringIO(full_data_json), orient='split')
+        dff = normalize_frame(dataframe_from_store(full_data_json))
+        years = selected_years(years)
+        if boroughs and not isinstance(boroughs, list):
+            boroughs = [boroughs]
+        if boroughs:
+            boroughs = [str(borough).strip() for borough in boroughs]
 
         # Apply dropdown filters
         if boroughs:
@@ -43,14 +52,15 @@ def register_filter_callbacks(app, df: pd.DataFrame):
         if years:
             dff = dff[dff['year'].isin(years)]
 
-        # Apply search query (overrides dropdowns if provided)
+        # Apply search on the full dataset so it replaces, rather than intersects, the dropdowns
         search_filters = {}
         if search_query and search_clicks:
             search_filters = parse_search_query(search_query, df)
+            dff = normalize_frame(dataframe_from_store(full_data_json))
             if search_filters.get('borough'):
                 dff = dff[dff['borough'].isin(search_filters['borough'])]
             if search_filters.get('year'):
-                dff = dff[dff['year'].isin(search_filters['year'])]
+                dff = dff[dff['year'].isin(selected_years(search_filters['year']))]
 
         # Build active filters display
         filter_parts = []
@@ -88,8 +98,9 @@ def register_filter_callbacks(app, df: pd.DataFrame):
         if not search_query or not search_clicks or full_data_json is None:
             return no_update, no_update
 
-        import io
-        search_filters = parse_search_query(search_query, pd.read_json(io.StringIO(full_data_json), orient='split'))
+        search_filters = parse_search_query(
+            search_query, normalize_frame(dataframe_from_store(full_data_json))
+        )
 
         borough_val = search_filters.get('borough', no_update)
         year_val = search_filters.get('year', no_update)
