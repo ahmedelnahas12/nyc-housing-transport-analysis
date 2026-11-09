@@ -2,12 +2,9 @@
 data/*.csv
 data/*.parquet
 data/*.pkl
-*.csv
-*.parquet
 
 # Jupyter
 .ipynb_checkpoints/
-*.ipynb
 
 # Python
 __pycache__/
