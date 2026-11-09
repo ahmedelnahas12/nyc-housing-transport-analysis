@@ -19,22 +19,18 @@ def register_filter_callbacks(app, df: pd.DataFrame):
         """Store full dataset in browser memory."""
         return df.to_json(date_format='iso', orient='split')
 
-    # Determine which filter ID to use
-    has_borough = 'borough' in df.columns
-    geo_filter_id = 'filter-borough' if has_borough else 'filter-zip'
-    geo_col = 'borough' if has_borough else 'zip_code'
-
     @app.callback(
         Output('filtered-data-store', 'data'),
         Output('active-filters-display', 'children'),
-        Input(geo_filter_id, 'value'),
+        Input('filter-borough', 'value'),
+        Input('filter-zip', 'value'),
         Input('filter-year', 'value'),
         Input('search-btn', 'n_clicks'),
         State('search-input', 'value'),
         State('full-data-store', 'data'),
         prevent_initial_call=True
     )
-    def apply_filters(geo_values, years, search_clicks, search_query, full_data_json):
+    def apply_filters(boroughs, zips, years, search_clicks, search_query, full_data_json):
         """Apply dropdown filters and search to data."""
         if full_data_json is None:
             return no_update, no_update
@@ -43,8 +39,10 @@ def register_filter_callbacks(app, df: pd.DataFrame):
         dff = pd.read_json(io.StringIO(full_data_json), orient='split')
 
         # Apply dropdown filters
-        if geo_values:
-            dff = dff[dff[geo_col].isin(geo_values)]
+        if boroughs:
+            dff = dff[dff['borough'].isin(boroughs)]
+        if zips:
+            dff = dff[dff['zip_code'].astype(str).isin([str(z) for z in zips])]
         if years:
             dff = dff[dff['year'].isin(years)]
 
@@ -52,19 +50,21 @@ def register_filter_callbacks(app, df: pd.DataFrame):
         search_filters = {}
         if search_query and search_clicks:
             search_filters = parse_search_query(search_query, df)
-            if search_filters.get(geo_col):
-                dff = dff[dff[geo_col].isin(search_filters[geo_col])]
+            if search_filters.get('borough'):
+                dff = dff[dff['borough'].isin(search_filters['borough'])]
+            if search_filters.get('zip_code'):
+                dff = dff[dff['zip_code'].astype(str).isin([str(z) for z in search_filters['zip_code']])]
             if search_filters.get('year'):
                 dff = dff[dff['year'].isin(search_filters['year'])]
 
         # Build active filters display
         filter_parts = []
-        if geo_values or search_filters.get(geo_col):
-            g = geo_values or search_filters.get(geo_col, [])
-            filter_parts.append(f"{'Borough' if has_borough else 'ZIP Code'}: {', '.join(str(v) for v in g)}")
-        if years or search_filters.get('year'):
-            y = years or search_filters.get('year', [])
-            filter_parts.append(f"Year: {', '.join(str(v) for v in y)}")
+        if boroughs:
+            filter_parts.append(f"Borough: {', '.join(boroughs)}")
+        if zips:
+            filter_parts.append(f"ZIP: {', '.join(str(z) for z in zips)}")
+        if years:
+            filter_parts.append(f"Year: {', '.join(str(y) for y in years)}")
         if search_query and search_clicks:
             filter_parts.append(f"Search: \"{search_query}\"")
 
@@ -79,7 +79,8 @@ def register_filter_callbacks(app, df: pd.DataFrame):
         return dff.to_json(date_format='iso', orient='split'), active_display
 
     @app.callback(
-        Output(geo_filter_id, 'value'),
+        Output('filter-borough', 'value'),
+        Output('filter-zip', 'value'),
         Output('filter-year', 'value'),
         Input('search-btn', 'n_clicks'),
         State('search-input', 'value'),
@@ -89,12 +90,13 @@ def register_filter_callbacks(app, df: pd.DataFrame):
     def sync_dropdowns_from_search(search_clicks, search_query, full_data_json):
         """Sync dropdown values from search query."""
         if not search_query or not search_clicks or full_data_json is None:
-            return no_update, no_update
+            return no_update, no_update, no_update
 
         import io
         search_filters = parse_search_query(search_query, pd.read_json(io.StringIO(full_data_json), orient='split'))
 
-        geo_val = search_filters.get(geo_col, no_update)
+        borough_val = search_filters.get('borough', no_update)
+        zip_val = search_filters.get('zip_code', no_update)
         year_val = search_filters.get('year', no_update)
 
-        return geo_val, year_val
+        return borough_val, zip_val, year_val

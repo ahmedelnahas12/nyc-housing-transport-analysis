@@ -13,11 +13,7 @@ def create_filters(df: pd.DataFrame) -> html.Div:
     zip_codes = sorted(df['zip_code'].dropna().unique()) if 'zip_code' in df.columns else []
     boroughs = sorted(df['borough'].dropna().unique()) if 'borough' in df.columns else []
 
-    # Use zip_codes if no borough column, else boroughs
-    geo_options = boroughs if boroughs else zip_codes
-    geo_label = "Borough" if boroughs else "ZIP Code"
-    geo_id = 'filter-borough' if boroughs else 'filter-zip'
-
+    # Always offer both filters if they exist
     return html.Div([
         # Header
         dbc.Row([
@@ -28,20 +24,30 @@ def create_filters(df: pd.DataFrame) -> html.Div:
             ])
         ]),
 
-        # Filter Row 1: Borough/ZIP, Year
+        # Filter Row 1: Borough, ZIP, Year
         dbc.Row([
             dbc.Col([
-                html.Label(geo_label, className="fw-bold"),
+                html.Label("Borough", className="fw-bold"),
                 dcc.Dropdown(
-                    id=geo_id,
-                    options=[{'label': str(b), 'value': b} for b in geo_options],
+                    id='filter-borough',
+                    options=[{'label': str(b), 'value': b} for b in boroughs],
                     value=[],
                     multi=True,
-                    placeholder=f"Select {geo_label.lower()}(s)...",
+                    placeholder="Select borough(s)...",
                     className="mb-3"
                 ),
-            ], md=6),
-
+            ], md=4),
+            dbc.Col([
+                html.Label("ZIP Code", className="fw-bold"),
+                dcc.Dropdown(
+                    id='filter-zip',
+                    options=[{'label': str(z), 'value': str(z)} for z in zip_codes],
+                    value=[],
+                    multi=True,
+                    placeholder="Select ZIP(s)...",
+                    className="mb-3"
+                ),
+            ], md=4),
             dbc.Col([
                 html.Label("Year", className="fw-bold"),
                 dcc.Dropdown(
@@ -52,7 +58,7 @@ def create_filters(df: pd.DataFrame) -> html.Div:
                     placeholder="Select year(s)...",
                     className="mb-3"
                 ),
-            ], md=6),
+            ], md=4),
         ]),
 
         # Filter Row 2: Housing & Traffic categories
