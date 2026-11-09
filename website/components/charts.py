@@ -8,7 +8,7 @@ import numpy as np
 
 
 def _get_geo_col(df: pd.DataFrame) -> str:
-    """Get the geographic column name (borough or zip_code)."""
+    """Get the geographic column name (prefer borough if available, else zip_code)."""
     if 'borough' in df.columns:
         return 'borough'
     elif 'zip_code' in df.columns:
@@ -146,8 +146,7 @@ def create_cross_domain_scatter(df: pd.DataFrame) -> go.Figure:
 
     fig = px.scatter(changes, x='housing_pct', y='traffic_pct', hover_data=[geo_col],
                      title=f'% Change Affordable Housing vs Traffic Volume ({first_y}→{last_y}) by {geo_col.replace("_", " ").title()}',
-                     labels={'housing_pct': '% Change Affordable Units', 'traffic_pct': '% Change Traffic Volume'},
-                     trendline='ols' if len(changes) > 1 else None)
+                     labels={'housing_pct': '% Change Affordable Units', 'traffic_pct': '% Change Traffic Volume'})
     fig.add_hline(y=0, line_dash='dash', line_color='gray')
     fig.add_vline(x=0, line_dash='dash', line_color='gray')
     return fig
@@ -169,8 +168,7 @@ def create_housing_traffic_scatter(df: pd.DataFrame) -> go.Figure:
                      color=geo_col,
                      hover_data=['year'],
                      title=f'Affordable Housing Units vs Traffic Volume ({geo_col.replace("_", " ").title()} × Year)',
-                     labels={traffic_col: 'Annual Vehicle Volume', 'total_affordable_units': 'Affordable Units'},
-                     trendline='ols' if len(df) > 1 else None)
+                     labels={traffic_col: 'Annual Vehicle Volume', 'total_affordable_units': 'Affordable Units'})
     return fig
 
 

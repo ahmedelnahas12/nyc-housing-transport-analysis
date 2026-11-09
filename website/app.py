@@ -7,6 +7,15 @@ import pandas as pd
 import plotly.graph_objects as go
 import os
 
+# --- Initialize Path for Imports ---
+import sys
+import os
+# Add the project root to sys.path so 'website' package can be found
+base_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(base_dir)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from website.components.filters import create_filters
 from website.components.charts import CHART_REGISTRY
 from website.components.layout import create_layout
